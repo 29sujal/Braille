@@ -79,7 +79,7 @@
       brailleDisplay.innerHTML = "";
       currentChar.textContent = "Character: " + letter;
 
-      // Create 6-dot Braille cell
+      // Create 6-dot Braille cell visually
       for (let i = 1; i <= totalDots; i++) {
         const dot = document.createElement("div");
         dot.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
@@ -92,16 +92,17 @@
         brailleDisplay.appendChild(dot);
       }
 
-      // Vibrate pattern
+      // Vibrate pattern (slow, easy to follow)
       if (navigator.vibrate && brailleMap[letter]) {
         let pattern = [];
         for (let i = 1; i <= totalDots; i++) {
           if (brailleMap[letter].includes(i)) {
-            pattern.push(5000); // vibration 200ms
+            pattern.push(500); // buzz 500ms for active dot
           } else {
-            pattern.push(1000); // pause 100ms
+            pattern.push(300); // pause 300ms for inactive dot
           }
         }
+        pattern.push(1000); // long pause = end of character
         navigator.vibrate(pattern);
       }
     }
