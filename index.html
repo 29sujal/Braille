@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Braille Swipe Simulation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
+
+  <h1 class="text-2xl font-bold mb-6 text-gray-800">Swipe-Controlled Braille Reading</h1>
+
+  <!-- Input text -->
+  <div class="mb-6 flex gap-2">
+    <input id="inputText" type="text" placeholder="Enter text (A-Z supported)" 
+           class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400">
+    <button id="loadBtn" 
+            class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
+      Load
+    </button>
+  </div>
+
+  <!-- Phone -->
+  <div id="phone" class="w-52 h-96 bg-gray-700 rounded-3xl p-3 flex items-center justify-center shadow-lg cursor-pointer">
+    <div class="w-full h-full bg-gray-300 rounded-2xl flex items-center justify-center">
+      <div id="brailleDisplay" class="grid grid-cols-2 gap-3">
+        <!-- Braille dots will appear here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <p class="mt-4 text-gray-600">Click the phone (swipe simulation) → Next character</p>
+  <p id="currentChar" class="mt-2 text-lg font-semibold text-blue-600"></p>
+
+  <script>
+    // Braille mapping for A–Z (Grade 1 Braille, 6-dot cells)
+    // Dot positions: 1 4 / 2 5 / 3 6
+    const brailleMap = {
+      "A": [1],
+      "B": [1,2],
+      "C": [1,4],
+      "D": [1,4,5],
+      "E": [1,5],
+      "F": [1,2,4],
+      "G": [1,2,4,5],
+      "H": [1,2,5],
+      "I": [2,4],
+      "J": [2,4,5],
+      "K": [1,3],
+      "L": [1,2,3],
+      "M": [1,3,4],
+      "N": [1,3,4,5],
+      "O": [1,3,5],
+      "P": [1,2,3,4],
+      "Q": [1,2,3,4,5],
+      "R": [1,2,3,5],
+      "S": [2,3,4],
+      "T": [2,3,4,5],
+      "U": [1,3,6],
+      "V": [1,2,3,6],
+      "W": [2,4,5,6],
+      "X": [1,3,4,6],
+      "Y": [1,3,4,5,6],
+      "Z": [1,3,5,6]
+    };
+
+    const brailleDisplay = document.getElementById("brailleDisplay");
+    const currentChar = document.getElementById("currentChar");
+    const phone = document.getElementById("phone");
+    const inputText = document.getElementById("inputText");
+    const loadBtn = document.getElementById("loadBtn");
+
+    const totalDots = 6;
+    let sequence = []; // stores user input letters
+    let index = 0;
+
+    function renderBraille(letter) {
+      brailleDisplay.innerHTML = "";
+      currentChar.textContent = "Character: " + letter;
+
+      // Create 6-dot Braille cell
+      for (let i = 1; i <= totalDots; i++) {
+        const dot = document.createElement("div");
+        dot.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
+
+        if (brailleMap[letter] && brailleMap[letter].includes(i)) {
+          dot.classList.add("bg-blue-500");
+        } else {
+          dot.classList.add("bg-gray-200");
+        }
+        brailleDisplay.appendChild(dot);
+      }
+
+      // Vibrate pattern
+      if (navigator.vibrate && brailleMap[letter]) {
+        let pattern = [];
+        for (let i = 1; i <= totalDots; i++) {
+          if (brailleMap[letter].includes(i)) {
+            pattern.push(200); // vibration 200ms
+          } else {
+            pattern.push(100); // pause 100ms
+          }
+        }
+        navigator.vibrate(pattern);
+      }
+    }
+
+    // Load user text
+    loadBtn.addEventListener("click", () => {
+      const text = inputText.value.toUpperCase().replace(/[^A-Z]/g, ""); // allow only A–Z
+      if (text.length === 0) {
+        alert("Please enter letters A–Z only.");
+        return;
+      }
+      sequence = text.split("");
+      index = 0;
+      renderBraille(sequence[index]);
+    });
+
+    // On phone click → next character
+    phone.addEventListener("click", () => {
+      if (sequence.length === 0) return;
+      renderBraille(sequence[index]);
+      index = (index + 1) % sequence.length;
+    });
+
+    // Default display
+    currentChar.textContent = "Enter text above and click Load";
+  </script>
+
+</body>
+</html>
