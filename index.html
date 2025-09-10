@@ -95,8 +95,8 @@
       // Vibrate only active dots in sequence
       if (navigator.vibrate && brailleMap[letter]) {
         const pattern = [];
-        const active = trainingMode.checked ? 1000 : 400;
-        const pause = trainingMode.checked ? 500 : 150;
+        const active = trainingMode.checked ? 2000 : 400;
+        const pause = trainingMode.checked ? 1000 : 150;
 
         brailleOrder.forEach(dot => {
           if (brailleMap[letter].includes(dot)) {
