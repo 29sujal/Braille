@@ -33,7 +33,7 @@
   <div id="phone"
     class="w-52 h-96 bg-gray-700 rounded-3xl p-3 flex items-center justify-center shadow-lg cursor-pointer">
     <div class="w-full h-full bg-gray-300 rounded-2xl flex items-center justify-center">
-      <div id="brailleDisplay" class="grid grid-cols-2 gap-3">
+      <div id="brailleDisplay" class="grid grid-rows-3 grid-cols-2 gap-6">
         <!-- Braille dots will appear here -->
       </div>
     </div>
@@ -60,58 +60,16 @@
     const loadBtn = document.getElementById("loadBtn");
     const trainingMode = document.getElementById("trainingMode");
 
-    const totalDots = 6;
     let sequence = [];
     let index = 0;
 
     // Function: Speak text using browser TTS
     function speak(text) {
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9; // slower speech
+      utterance.rate = 0.9;
       utterance.pitch = 1;
       speechSynthesis.speak(utterance);
     }
-
-    // function renderBraille(letter) {
-    //   brailleDisplay.innerHTML = "";
-    //   currentChar.textContent = "Character: " + letter;
-
-    //   // Draw 6-dot Braille visually
-    //   for (let i = 1; i <= totalDots; i++) {
-    //     const dot = document.createElement("div");
-    //     dot.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
-    //     if (brailleMap[letter] && brailleMap[letter].includes(i)) {
-    //       dot.classList.add("bg-blue-500");
-    //     } else {
-    //       dot.classList.add("bg-gray-200");
-    //     }
-    //     brailleDisplay.appendChild(dot);
-    //   }
-
-    //   // Vibrate pattern
-    //   if (navigator.vibrate && brailleMap[letter]) {
-    //     let pattern = [];
-    //     let active = trainingMode.checked ? 1000 : 400;
-    //     let inactive = trainingMode.checked ? 1000 : 200;
-    //     let endPause = trainingMode.checked ? 2000 : 600;
-
-    //     for (let i = 1; i <= totalDots; i++) {
-    //       if (brailleMap[letter].includes(i)) {
-    //         pattern.push(active);
-    //       } else {
-    //         pattern.push(inactive);
-    //       }
-    //     }
-    //     pattern.push(endPause);
-    //     navigator.vibrate(pattern);
-    //   }
-
-    //   // Speak the letter + dot numbers
-    //   if (brailleMap[letter]) {
-    //     const dots = brailleMap[letter].join(", ");
-    //     speak(`${letter}. Dots ${dots}`);
-    //   }
-    // }
 
     function renderBraille(letter) {
       brailleDisplay.innerHTML = "";
@@ -120,10 +78,10 @@
       // Braille dot order for 2x3 layout: 1 4 / 2 5 / 3 6
       const brailleOrder = [1, 2, 3, 4, 5, 6];
 
-      // Draw 6-dot Braille visually in 2-column grid
+      // Draw Braille dots visually in 2x3 grid
       brailleOrder.forEach(dot => {
         const dotDiv = document.createElement("div");
-        dotDiv.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
+        dotDiv.className = "w-12 h-12 rounded-full border-2 border-gray-500 flex items-center justify-center";
 
         if (brailleMap[letter] && brailleMap[letter].includes(dot)) {
           dotDiv.classList.add("bg-blue-500"); // active dot
@@ -134,23 +92,19 @@
         brailleDisplay.appendChild(dotDiv);
       });
 
-      // Vibrate pattern in real Braille order
+      // Vibrate only active dots in sequence
       if (navigator.vibrate && brailleMap[letter]) {
         const pattern = [];
-        const active = trainingMode.checked ? 1000 : 400; // active dot vibration
-        const pause = trainingMode.checked ? 500 : 150;   // pause between dots
-        const endPause = trainingMode.checked ? 2000 : 600; // pause after letter
+        const active = trainingMode.checked ? 1000 : 400;
+        const pause = trainingMode.checked ? 500 : 150;
 
         brailleOrder.forEach(dot => {
           if (brailleMap[letter].includes(dot)) {
             pattern.push(active); // vibrate active dot
-          } else {
-            pattern.push(0);      // no vibration for inactive dot
+            pattern.push(pause);  // short pause after each active dot
           }
-          pattern.push(pause);    // short pause after each dot
         });
 
-        pattern.push(endPause);   // pause after full character
         navigator.vibrate(pattern);
       }
 
@@ -184,5 +138,4 @@
   </script>
 
 </body>
-
 </html>
