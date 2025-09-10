@@ -1,141 +1,218 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Braille Swipe Simulation</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Braille Swipe Simulation (fixed)</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* small custom styles for dot states / animation */
+    .dot {
+      width: 3rem;
+      height: 3rem;
+      border-radius: 9999px;
+      border: 2px solid #6b7280; /* gray-500 */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: #e5e7eb; /* gray-200 */
+      transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+    .dot.on {
+      background: #2563eb; /* blue-600 */
+      color: white;
+      border-color: #1e40af; /* blue-800 */
+    }
+    .dot.pulse {
+      transform: scale(1.18);
+      box-shadow: 0 6px 18px rgba(37,99,235,0.28);
+    }
+  </style>
 </head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-start p-8">
 
-<body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
+  <h1 class="text-3xl font-bold mb-6 text-gray-800">Swipe-Controlled Braille Reading</h1>
 
-  <h1 class="text-2xl font-bold mb-6 text-gray-800">Swipe-Controlled Braille Reading</h1>
-
-  <!-- Input text -->
   <div class="mb-6 flex gap-2">
     <input id="inputText" type="text" placeholder="Enter text (A-Z supported)"
       class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400">
-    <button id="loadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
-      Load
-    </button>
+    <button id="loadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">Load</button>
   </div>
 
-  <!-- Toggle Training Mode -->
   <div class="mb-6">
     <label class="flex items-center gap-2">
       <input type="checkbox" id="trainingMode" class="w-5 h-5">
-      <span class="text-gray-700">Training Mode (slower vibrations)</span>
+      <span class="text-gray-700">Training Mode (slower vibrations + show numbers)</span>
     </label>
   </div>
 
-  <!-- Phone -->
+  <!-- phone -->
   <div id="phone"
-    class="w-52 h-96 bg-gray-700 rounded-3xl p-3 flex items-center justify-center shadow-lg cursor-pointer">
+       class="w-56 h-96 bg-gray-700 rounded-3xl p-3 flex items-center justify-center shadow-lg cursor-pointer">
     <div class="w-full h-full bg-gray-300 rounded-2xl flex items-center justify-center">
-      <div id="brailleDisplay" class="grid grid-rows-3 grid-cols-2 gap-6">
-        <!-- Braille dots will appear here -->
-      </div>
+      <!-- Use a 3-row x 2-col grid. We'll insert elements in the order that results
+           in left column = 1,2,3 (top→bottom) and right column = 4,5,6 (top→bottom). -->
+      <div id="brailleDisplay" class="grid grid-rows-3 grid-cols-2 gap-4"></div>
     </div>
   </div>
 
-  <!-- Instructions -->
   <p class="mt-4 text-gray-600">Click the phone (swipe simulation) → Next character</p>
-  <p id="currentChar" class="mt-2 text-lg font-semibold text-blue-600"></p>
+  <p id="currentChar" class="mt-2 text-lg font-semibold text-blue-600">Enter text above and click Load</p>
 
-  <script>
-    // Braille mapping (Grade 1 Braille)
-    const brailleMap = {
-      "A": [1], "B": [1, 2], "C": [1, 4], "D": [1, 4, 5], "E": [1, 5],
-      "F": [1, 2, 4], "G": [1, 2, 4, 5], "H": [1, 2, 5], "I": [2, 4], "J": [2, 4, 5],
-      "K": [1, 3], "L": [1, 2, 3], "M": [1, 3, 4], "N": [1, 3, 4, 5], "O": [1, 3, 5],
-      "P": [1, 2, 3, 4], "Q": [1, 2, 3, 4, 5], "R": [1, 2, 3, 5], "S": [2, 3, 4], "T": [2, 3, 4, 5],
-      "U": [1, 3, 6], "V": [1, 2, 3, 6], "W": [2, 4, 5, 6], "X": [1, 3, 4, 6], "Y": [1, 3, 4, 5, 6], "Z": [1, 3, 5, 6]
-    };
+<script>
+  // Grade 1 braille mapping (dots numbered 1..6)
+  const brailleMap = {
+    "A": [1], "B": [1, 2], "C": [1, 4], "D": [1, 4, 5], "E": [1, 5],
+    "F": [1, 2, 4], "G": [1, 2, 4, 5], "H": [1, 2, 5], "I": [2, 4], "J": [2, 4, 5],
+    "K": [1, 3], "L": [1, 2, 3], "M": [1, 3, 4], "N": [1, 3, 4, 5], "O": [1, 3, 5],
+    "P": [1, 2, 3, 4], "Q": [1, 2, 3, 4, 5], "R": [1, 2, 3, 5], "S": [2, 3, 4], "T": [2, 3, 4, 5],
+    "U": [1, 3, 6], "V": [1, 2, 3, 6], "W": [2, 4, 5, 6], "X": [1, 3, 4, 6], "Y": [1, 3, 4, 5, 6], "Z": [1, 3, 5, 6]
+  };
 
-    const brailleDisplay = document.getElementById("brailleDisplay");
-    const currentChar = document.getElementById("currentChar");
-    const phone = document.getElementById("phone");
-    const inputText = document.getElementById("inputText");
-    const loadBtn = document.getElementById("loadBtn");
-    const trainingMode = document.getElementById("trainingMode");
+  const brailleDisplay = document.getElementById("brailleDisplay");
+  const currentChar = document.getElementById("currentChar");
+  const phone = document.getElementById("phone");
+  const inputText = document.getElementById("inputText");
+  const loadBtn = document.getElementById("loadBtn");
+  const trainingMode = document.getElementById("trainingMode");
 
-    let sequence = [];
-    let index = 0;
+  let sequence = [];
+  let index = 0;
+  let timeouts = [];          // keep timeouts to cancel on next animation
+  let dotElements = {};       // map dot number -> DOM element
 
-    // Function: Speak text using browser TTS
-    function speak(text) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      speechSynthesis.speak(utterance);
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95;
+    u.pitch = 1;
+    speechSynthesis.speak(u);
+  }
+
+  // We will render cells in the order [1,4,2,5,3,6] so grid (row major)
+  // appears as:
+  //   row1: (col1)->1    (col2)->4
+  //   row2: (col1)->2    (col2)->5
+  //   row3: (col1)->3    (col2)->6
+  const brailleOrderForGrid = [1, 4, 2, 5, 3, 6];
+
+  function clearPending() {
+    timeouts.forEach(t => clearTimeout(t));
+    timeouts = [];
+    if (navigator.vibrate) navigator.vibrate(0); // stop ongoing vibration
+    // remove pulse class from all dots
+    Object.values(dotElements).forEach(el => el && el.classList.remove('pulse'));
+  }
+
+  function renderBraille(letter) {
+    clearPending();
+    brailleDisplay.innerHTML = "";
+    dotElements = {};
+    currentChar.textContent = "Character: " + letter;
+
+    // Create dots in the grid order (so left column = 1,2,3 ; right column = 4,5,6)
+    brailleOrderForGrid.forEach(dot => {
+      const dotDiv = document.createElement("div");
+      dotDiv.className = "dot";
+      dotDiv.dataset.dot = dot;
+      // active styling if this letter uses the dot
+      if (brailleMap[letter] && brailleMap[letter].includes(dot)) {
+        dotDiv.classList.add("on");
+      }
+      // show numbers in training mode
+      if (trainingMode.checked) {
+        const span = document.createElement("span");
+        span.textContent = dot;
+        span.style.fontWeight = "700";
+        span.style.fontSize = "1rem";
+        dotDiv.appendChild(span);
+      }
+      brailleDisplay.appendChild(dotDiv);
+      dotElements[dot] = dotDiv;
+    });
+  }
+
+  // Animate dots in real braille reading order: left column top->bottom (1,2,3),
+  // then right column top->bottom (4,5,6)
+  function animateSequence(letter) {
+    clearPending();
+    const seq = [1,2,3,4,5,6];
+    const isTraining = trainingMode.checked;
+    const activeDur = isTraining ? 1000 : 500; // how long each dot highlights
+    const gap = isTraining ? 500 : 250;       // pause between highlights
+    let t = 0;
+
+    // speak letter at start
+    if (brailleMap[letter]) {
+      speak(`${letter}`);
     }
 
-    function renderBraille(letter) {
-      brailleDisplay.innerHTML = "";
-      currentChar.textContent = "Character: " + letter;
-
-      // Braille dot order for 2x3 layout: 1 4 / 2 5 / 3 6
-      const brailleOrder = [1, 2, 3, 4, 5, 6];
-
-      // Draw Braille dots visually in 2x3 grid
-      brailleOrder.forEach(dot => {
-        const dotDiv = document.createElement("div");
-        dotDiv.className = "w-12 h-12 rounded-full border-2 border-gray-500 flex items-center justify-center";
-
-        if (brailleMap[letter] && brailleMap[letter].includes(dot)) {
-          dotDiv.classList.add("bg-blue-500"); // active dot
-        } else {
-          dotDiv.classList.add("bg-gray-200"); // inactive dot
+    seq.forEach(dotNum => {
+      // highlight/pulse at time t
+      const showTimer = setTimeout(() => {
+        // briefly add pulse
+        const el = dotElements[dotNum];
+        if (!el) return;
+        el.classList.add('pulse');
+        // if this dot is set in the letter, vibrate a short pulse
+        if (navigator.vibrate && brailleMap[letter] && brailleMap[letter].includes(dotNum)) {
+          // vibrate for a shorter duration for training vs normal
+          navigator.vibrate(isTraining ? 220 : 120);
         }
+      }, t);
+      timeouts.push(showTimer);
 
-        brailleDisplay.appendChild(dotDiv);
-      });
+      // remove pulse after activeDur (so next dot can pulse)
+      const hideTimer = setTimeout(() => {
+        const el = dotElements[dotNum];
+        if (el) el.classList.remove('pulse');
+      }, t + activeDur);
+      timeouts.push(hideTimer);
 
-      // Vibrate only active dots in sequence
-      if (navigator.vibrate && brailleMap[letter]) {
-        const pattern = [];
-        const active = trainingMode.checked ? 2000 : 400;
-        const pause = trainingMode.checked ? 1000 : 150;
+      t += activeDur + gap;
+    });
 
-        brailleOrder.forEach(dot => {
-          if (brailleMap[letter].includes(dot)) {
-            pattern.push(active); // vibrate active dot
-            pattern.push(pause);  // short pause after each active dot
-          }
-        });
-
-        navigator.vibrate(pattern);
+    // After full sequence, speak dot numbers if training mode
+    const afterAll = setTimeout(() => {
+      if (trainingMode.checked && brailleMap[letter]) {
+        speak(`Dots ${brailleMap[letter].join(', ')}`);
       }
+    }, t + 20);
+    timeouts.push(afterAll);
+  }
 
-      // Speak the letter + dot numbers
-      if (brailleMap[letter]) {
-        const dots = brailleMap[letter].join(", ");
-        speak(`${letter}. Dots ${dots}`);
-      }
+  // Load text
+  loadBtn.addEventListener("click", () => {
+    const text = inputText.value.toUpperCase().replace(/[^A-Z]/g, "");
+    if (!text) {
+      alert("Please enter letters A–Z only.");
+      return;
     }
+    sequence = text.split("");
+    index = 0;
+    renderBraille(sequence[index]);
+    // auto animate first character
+    animateSequence(sequence[index]);
+  });
 
-    // Load user text
-    loadBtn.addEventListener("click", () => {
-      const text = inputText.value.toUpperCase().replace(/[^A-Z]/g, "");
-      if (text.length === 0) {
-        alert("Please enter letters A–Z only.");
-        return;
-      }
-      sequence = text.split("");
-      index = 0;
-      renderBraille(sequence[index]);
-    });
+  // Swipe simulation → next letter
+  phone.addEventListener("click", () => {
+    if (!sequence.length) return;
+    // show and animate current index then advance
+    const letter = sequence[index];
+    renderBraille(letter);
+    animateSequence(letter);
+    index = (index + 1) % sequence.length;
+  });
 
-    // On phone click → next character
-    phone.addEventListener("click", () => {
-      if (sequence.length === 0) return;
-      renderBraille(sequence[index]);
-      index = (index + 1) % sequence.length;
-    });
+  // If user toggles training mode while a character is shown, re-render to show/hide numbers
+  trainingMode.addEventListener("change", () => {
+    if (sequence.length) {
+      renderBraille(sequence[(index === 0 ? sequence.length-1 : index-1) % sequence.length]);
+    }
+  });
 
-    currentChar.textContent = "Enter text above and click Load";
-  </script>
-
+</script>
 </body>
 </html>
