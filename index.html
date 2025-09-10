@@ -1,21 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Braille Swipe Simulation</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
+
 <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-6">
 
   <h1 class="text-2xl font-bold mb-6 text-gray-800">Swipe-Controlled Braille Reading</h1>
 
   <!-- Input text -->
   <div class="mb-6 flex gap-2">
-    <input id="inputText" type="text" placeholder="Enter text (A-Z supported)" 
-           class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400">
-    <button id="loadBtn" 
-            class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
+    <input id="inputText" type="text" placeholder="Enter text (A-Z supported)"
+      class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400">
+    <button id="loadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
       Load
     </button>
   </div>
@@ -29,7 +30,8 @@
   </div>
 
   <!-- Phone -->
-  <div id="phone" class="w-52 h-96 bg-gray-700 rounded-3xl p-3 flex items-center justify-center shadow-lg cursor-pointer">
+  <div id="phone"
+    class="w-52 h-96 bg-gray-700 rounded-3xl p-3 flex items-center justify-center shadow-lg cursor-pointer">
     <div class="w-full h-full bg-gray-300 rounded-2xl flex items-center justify-center">
       <div id="brailleDisplay" class="grid grid-cols-2 gap-3">
         <!-- Braille dots will appear here -->
@@ -44,11 +46,11 @@
   <script>
     // Braille mapping (Grade 1 Braille)
     const brailleMap = {
-      "A": [1], "B": [1,2], "C": [1,4], "D": [1,4,5], "E": [1,5],
-      "F": [1,2,4], "G": [1,2,4,5], "H": [1,2,5], "I": [2,4], "J": [2,4,5],
-      "K": [1,3], "L": [1,2,3], "M": [1,3,4], "N": [1,3,4,5], "O": [1,3,5],
-      "P": [1,2,3,4], "Q": [1,2,3,4,5], "R": [1,2,3,5], "S": [2,3,4], "T": [2,3,4,5],
-      "U": [1,3,6], "V": [1,2,3,6], "W": [2,4,5,6], "X": [1,3,4,6], "Y": [1,3,4,5,6], "Z": [1,3,5,6]
+      "A": [1], "B": [1, 2], "C": [1, 4], "D": [1, 4, 5], "E": [1, 5],
+      "F": [1, 2, 4], "G": [1, 2, 4, 5], "H": [1, 2, 5], "I": [2, 4], "J": [2, 4, 5],
+      "K": [1, 3], "L": [1, 2, 3], "M": [1, 3, 4], "N": [1, 3, 4, 5], "O": [1, 3, 5],
+      "P": [1, 2, 3, 4], "Q": [1, 2, 3, 4, 5], "R": [1, 2, 3, 5], "S": [2, 3, 4], "T": [2, 3, 4, 5],
+      "U": [1, 3, 6], "V": [1, 2, 3, 6], "W": [2, 4, 5, 6], "X": [1, 3, 4, 6], "Y": [1, 3, 4, 5, 6], "Z": [1, 3, 5, 6]
     };
 
     const brailleDisplay = document.getElementById("brailleDisplay");
@@ -70,37 +72,85 @@
       speechSynthesis.speak(utterance);
     }
 
+    // function renderBraille(letter) {
+    //   brailleDisplay.innerHTML = "";
+    //   currentChar.textContent = "Character: " + letter;
+
+    //   // Draw 6-dot Braille visually
+    //   for (let i = 1; i <= totalDots; i++) {
+    //     const dot = document.createElement("div");
+    //     dot.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
+    //     if (brailleMap[letter] && brailleMap[letter].includes(i)) {
+    //       dot.classList.add("bg-blue-500");
+    //     } else {
+    //       dot.classList.add("bg-gray-200");
+    //     }
+    //     brailleDisplay.appendChild(dot);
+    //   }
+
+    //   // Vibrate pattern
+    //   if (navigator.vibrate && brailleMap[letter]) {
+    //     let pattern = [];
+    //     let active = trainingMode.checked ? 1000 : 400;
+    //     let inactive = trainingMode.checked ? 1000 : 200;
+    //     let endPause = trainingMode.checked ? 2000 : 600;
+
+    //     for (let i = 1; i <= totalDots; i++) {
+    //       if (brailleMap[letter].includes(i)) {
+    //         pattern.push(active);
+    //       } else {
+    //         pattern.push(inactive);
+    //       }
+    //     }
+    //     pattern.push(endPause);
+    //     navigator.vibrate(pattern);
+    //   }
+
+    //   // Speak the letter + dot numbers
+    //   if (brailleMap[letter]) {
+    //     const dots = brailleMap[letter].join(", ");
+    //     speak(`${letter}. Dots ${dots}`);
+    //   }
+    // }
+
     function renderBraille(letter) {
       brailleDisplay.innerHTML = "";
       currentChar.textContent = "Character: " + letter;
 
-      // Draw 6-dot Braille visually
-      for (let i = 1; i <= totalDots; i++) {
-        const dot = document.createElement("div");
-        dot.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
-        if (brailleMap[letter] && brailleMap[letter].includes(i)) {
-          dot.classList.add("bg-blue-500");
+      // Braille dot order for 2x3 layout: 1 4 / 2 5 / 3 6
+      const brailleOrder = [1, 2, 3, 4, 5, 6];
+
+      // Draw 6-dot Braille visually in 2-column grid
+      brailleOrder.forEach(dot => {
+        const dotDiv = document.createElement("div");
+        dotDiv.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
+
+        if (brailleMap[letter] && brailleMap[letter].includes(dot)) {
+          dotDiv.classList.add("bg-blue-500"); // active dot
         } else {
-          dot.classList.add("bg-gray-200");
+          dotDiv.classList.add("bg-gray-200"); // inactive dot
         }
-        brailleDisplay.appendChild(dot);
-      }
 
-      // Vibrate pattern
+        brailleDisplay.appendChild(dotDiv);
+      });
+
+      // Vibrate pattern in real Braille order
       if (navigator.vibrate && brailleMap[letter]) {
-        let pattern = [];
-        let active = trainingMode.checked ? 1000 : 400;
-        let inactive = trainingMode.checked ? 1000 : 200;
-        let endPause = trainingMode.checked ? 2000 : 600;
+        const pattern = [];
+        const active = trainingMode.checked ? 1000 : 400; // active dot vibration
+        const pause = trainingMode.checked ? 500 : 150;   // pause between dots
+        const endPause = trainingMode.checked ? 2000 : 600; // pause after letter
 
-        for (let i = 1; i <= totalDots; i++) {
-          if (brailleMap[letter].includes(i)) {
-            pattern.push(active);
+        brailleOrder.forEach(dot => {
+          if (brailleMap[letter].includes(dot)) {
+            pattern.push(active); // vibrate active dot
           } else {
-            pattern.push(inactive);
+            pattern.push(0);      // no vibration for inactive dot
           }
-        }
-        pattern.push(endPause);
+          pattern.push(pause);    // short pause after each dot
+        });
+
+        pattern.push(endPause);   // pause after full character
         navigator.vibrate(pattern);
       }
 
@@ -134,4 +184,5 @@
   </script>
 
 </body>
+
 </html>
