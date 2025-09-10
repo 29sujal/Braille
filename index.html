@@ -20,6 +20,14 @@
     </button>
   </div>
 
+  <!-- Toggle Training Mode -->
+  <div class="mb-6">
+    <label class="flex items-center gap-2">
+      <input type="checkbox" id="trainingMode" class="w-5 h-5">
+      <span class="text-gray-700">Training Mode (slower vibrations)</span>
+    </label>
+  </div>
+
   <!-- Phone -->
   <div id="phone" class="w-52 h-96 bg-gray-700 rounded-3xl p-3 flex items-center justify-center shadow-lg cursor-pointer">
     <div class="w-full h-full bg-gray-300 rounded-2xl flex items-center justify-center">
@@ -35,7 +43,6 @@
 
   <script>
     // Braille mapping for A–Z (Grade 1 Braille, 6-dot cells)
-    // Dot positions: 1 4 / 2 5 / 3 6
     const brailleMap = {
       "A": [1],
       "B": [1,2],
@@ -70,20 +77,20 @@
     const phone = document.getElementById("phone");
     const inputText = document.getElementById("inputText");
     const loadBtn = document.getElementById("loadBtn");
+    const trainingMode = document.getElementById("trainingMode");
 
     const totalDots = 6;
-    let sequence = []; // stores user input letters
+    let sequence = [];
     let index = 0;
 
     function renderBraille(letter) {
       brailleDisplay.innerHTML = "";
       currentChar.textContent = "Character: " + letter;
 
-      // Create 6-dot Braille cell visually
+      // Draw Braille dots visually
       for (let i = 1; i <= totalDots; i++) {
         const dot = document.createElement("div");
         dot.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
-
         if (brailleMap[letter] && brailleMap[letter].includes(i)) {
           dot.classList.add("bg-blue-500");
         } else {
@@ -92,24 +99,31 @@
         brailleDisplay.appendChild(dot);
       }
 
-      // Vibrate pattern (slow, easy to follow)
+      // Vibrate pattern
       if (navigator.vibrate && brailleMap[letter]) {
         let pattern = [];
+
+        // Choose timing depending on training mode
+        let active = trainingMode.checked ? 1000 : 400;  // vibration duration
+        let inactive = trainingMode.checked ? 1000 : 200; // pause duration
+        let endPause = trainingMode.checked ? 2000 : 600; // gap between letters
+
         for (let i = 1; i <= totalDots; i++) {
           if (brailleMap[letter].includes(i)) {
-            pattern.push(500); // buzz 500ms for active dot
+            pattern.push(active);
           } else {
-            pattern.push(300); // pause 300ms for inactive dot
+            pattern.push(inactive);
           }
         }
-        pattern.push(1000); // long pause = end of character
+
+        pattern.push(endPause); // end of character
         navigator.vibrate(pattern);
       }
     }
 
     // Load user text
     loadBtn.addEventListener("click", () => {
-      const text = inputText.value.toUpperCase().replace(/[^A-Z]/g, ""); // allow only A–Z
+      const text = inputText.value.toUpperCase().replace(/[^A-Z]/g, "");
       if (text.length === 0) {
         alert("Please enter letters A–Z only.");
         return;
@@ -126,7 +140,6 @@
       index = (index + 1) % sequence.length;
     });
 
-    // Default display
     currentChar.textContent = "Enter text above and click Load";
   </script>
 
