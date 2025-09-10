@@ -97,9 +97,9 @@
         let pattern = [];
         for (let i = 1; i <= totalDots; i++) {
           if (brailleMap[letter].includes(i)) {
-            pattern.push(200); // vibration 200ms
+            pattern.push(2000); // vibration 200ms
           } else {
-            pattern.push(100); // pause 100ms
+            pattern.push(1000); // pause 100ms
           }
         }
         navigator.vibrate(pattern);
