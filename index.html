@@ -42,34 +42,13 @@
   <p id="currentChar" class="mt-2 text-lg font-semibold text-blue-600"></p>
 
   <script>
-    // Braille mapping for A–Z (Grade 1 Braille, 6-dot cells)
+    // Braille mapping (Grade 1 Braille)
     const brailleMap = {
-      "A": [1],
-      "B": [1,2],
-      "C": [1,4],
-      "D": [1,4,5],
-      "E": [1,5],
-      "F": [1,2,4],
-      "G": [1,2,4,5],
-      "H": [1,2,5],
-      "I": [2,4],
-      "J": [2,4,5],
-      "K": [1,3],
-      "L": [1,2,3],
-      "M": [1,3,4],
-      "N": [1,3,4,5],
-      "O": [1,3,5],
-      "P": [1,2,3,4],
-      "Q": [1,2,3,4,5],
-      "R": [1,2,3,5],
-      "S": [2,3,4],
-      "T": [2,3,4,5],
-      "U": [1,3,6],
-      "V": [1,2,3,6],
-      "W": [2,4,5,6],
-      "X": [1,3,4,6],
-      "Y": [1,3,4,5,6],
-      "Z": [1,3,5,6]
+      "A": [1], "B": [1,2], "C": [1,4], "D": [1,4,5], "E": [1,5],
+      "F": [1,2,4], "G": [1,2,4,5], "H": [1,2,5], "I": [2,4], "J": [2,4,5],
+      "K": [1,3], "L": [1,2,3], "M": [1,3,4], "N": [1,3,4,5], "O": [1,3,5],
+      "P": [1,2,3,4], "Q": [1,2,3,4,5], "R": [1,2,3,5], "S": [2,3,4], "T": [2,3,4,5],
+      "U": [1,3,6], "V": [1,2,3,6], "W": [2,4,5,6], "X": [1,3,4,6], "Y": [1,3,4,5,6], "Z": [1,3,5,6]
     };
 
     const brailleDisplay = document.getElementById("brailleDisplay");
@@ -83,11 +62,19 @@
     let sequence = [];
     let index = 0;
 
+    // Function: Speak text using browser TTS
+    function speak(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.9; // slower speech
+      utterance.pitch = 1;
+      speechSynthesis.speak(utterance);
+    }
+
     function renderBraille(letter) {
       brailleDisplay.innerHTML = "";
       currentChar.textContent = "Character: " + letter;
 
-      // Draw Braille dots visually
+      // Draw 6-dot Braille visually
       for (let i = 1; i <= totalDots; i++) {
         const dot = document.createElement("div");
         dot.className = "w-8 h-8 rounded-full border-2 border-gray-500 flex items-center justify-center";
@@ -102,11 +89,9 @@
       // Vibrate pattern
       if (navigator.vibrate && brailleMap[letter]) {
         let pattern = [];
-
-        // Choose timing depending on training mode
-        let active = trainingMode.checked ? 3000 : 400;  // vibration duration
-        let inactive = trainingMode.checked ? 1000 : 200; // pause duration
-        let endPause = trainingMode.checked ? 2000 : 600; // gap between letters
+        let active = trainingMode.checked ? 1000 : 400;
+        let inactive = trainingMode.checked ? 1000 : 200;
+        let endPause = trainingMode.checked ? 2000 : 600;
 
         for (let i = 1; i <= totalDots; i++) {
           if (brailleMap[letter].includes(i)) {
@@ -115,9 +100,14 @@
             pattern.push(inactive);
           }
         }
-
-        pattern.push(endPause); // end of character
+        pattern.push(endPause);
         navigator.vibrate(pattern);
+      }
+
+      // Speak the letter + dot numbers
+      if (brailleMap[letter]) {
+        const dots = brailleMap[letter].join(", ");
+        speak(`${letter}. Dots ${dots}`);
       }
     }
 
