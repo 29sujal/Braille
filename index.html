@@ -4,30 +4,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Braille Swipe Simulation (fixed)</title>
+  <title>Braille Communication (Continuous Mode)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* small custom styles for dot states / animation */
     .dot {
       width: 3rem;
       height: 3rem;
       border-radius: 9999px;
       border: 2px solid #6b7280;
-      /* gray-500 */
       display: flex;
       align-items: center;
       justify-content: center;
       background: #e5e7eb;
-      /* gray-200 */
       transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
     }
 
     .dot.on {
       background: #2563eb;
-      /* blue-600 */
       color: white;
       border-color: #1e40af;
-      /* blue-800 */
     }
 
     .dot.pulse {
@@ -39,12 +34,13 @@
 
 <body class="bg-gray-100 min-h-screen flex flex-col items-center justify-start p-8">
 
-  <h1 class="text-3xl font-bold mb-6 text-gray-800">Swipe-Controlled Braille Reading</h1>
+  <h1 class="text-3xl font-bold mb-6 text-gray-800">Braille Communication</h1>
 
   <div class="mb-6 flex gap-2">
-    <input id="inputText" type="text" placeholder="Enter text (letters, digits, punctuation supported)"
+    <input id="inputText" type="text" placeholder="Enter text"
       class="px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400">
     <button id="loadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">Load</button>
+    <button id="playBtn" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700">Play Message</button>
   </div>
 
   <div class="mb-6">
@@ -58,94 +54,40 @@
   <div id="phone"
     class="w-56 h-96 bg-gray-700 rounded-3xl p-3 flex items-center justify-center shadow-lg cursor-pointer">
     <div class="w-full h-full bg-gray-300 rounded-2xl flex items-center justify-center">
-      <!-- Use a 3-row x 2-col grid. -->
       <div id="brailleDisplay" class="grid grid-rows-3 grid-cols-2 gap-4"></div>
     </div>
   </div>
 
-  <p class="mt-4 text-gray-600">Click the phone (swipe simulation) → Next character</p>
+  <p class="mt-4 text-gray-600">Click phone → Next character | Or press "Play Message" for auto output</p>
   <p id="currentChar" class="mt-2 text-lg font-semibold text-blue-600">Enter text above and click Load</p>
 
   <script>
-    // Grade 1 braille mapping (dots numbered 1..6)
+    // Braille map
     const brailleMap = {
-      // Letters
       "A": [1], "B": [1, 2], "C": [1, 4], "D": [1, 4, 5], "E": [1, 5],
       "F": [1, 2, 4], "G": [1, 2, 4, 5], "H": [1, 2, 5], "I": [2, 4], "J": [2, 4, 5],
       "K": [1, 3], "L": [1, 2, 3], "M": [1, 3, 4], "N": [1, 3, 4, 5], "O": [1, 3, 5],
       "P": [1, 2, 3, 4], "Q": [1, 2, 3, 4, 5], "R": [1, 2, 3, 5], "S": [2, 3, 4], "T": [2, 3, 4, 5],
       "U": [1, 3, 6], "V": [1, 2, 3, 6], "W": [2, 4, 5, 6], "X": [1, 3, 4, 6], "Y": [1, 3, 4, 5, 6], "Z": [1, 3, 5, 6],
-
-      // Digits
       "1": [1], "2": [1, 2], "3": [1, 4], "4": [1, 4, 5], "5": [1, 5],
       "6": [1, 2, 4], "7": [1, 2, 4, 5], "8": [1, 2, 5], "9": [2, 4], "0": [2, 4, 5],
-
-      // Punctuation
-      ".": [2, 5, 6],
-      ",": [2],
-      ";": [2, 3],
-      ":": [2, 5],
-      "!": [2, 3, 5],
-      "?": [2, 6],
-      "-": [3, 6],
-      "'": [3],
-      "\"": [5, 6],
-      "#": [3, 4, 5, 6],
-      "(": [1, 2, 6],
-      ")": [3, 4, 5],
-      "[": [1, 2, 6],
-      "]": [3, 4, 5],
-      "{": [1, 2, 6],
-      "}": [3, 4, 5],
-      "&": [1, 2, 3, 4, 6],
-      "*": [1, 6],
-      "/": [3, 4],
-      "\\": [1, 2, 5, 6],
-      "+": [2, 3, 5],
-      "=": [1, 2, 3, 4, 5, 6],
-      "<": [1, 2, 6],
-      ">": [3, 4, 5],
-      "@": [1, 4],
-      "«": [2, 3, 6],
-      "»": [3, 5, 6],
-      "№": [1, 3, 4, 5, 6],
-
-      // Space
-      " ": []
+      ".": [2, 5, 6], ",": [2], " ": []
     };
 
+    const brailleOrderForGrid = [1, 4, 2, 5, 3, 6];
     const brailleDisplay = document.getElementById("brailleDisplay");
     const currentChar = document.getElementById("currentChar");
     const phone = document.getElementById("phone");
     const inputText = document.getElementById("inputText");
     const loadBtn = document.getElementById("loadBtn");
+    const playBtn = document.getElementById("playBtn");
     const trainingMode = document.getElementById("trainingMode");
 
     let sequence = [];
     let index = 0;
-    let timeouts = [];
     let dotElements = {};
 
-    function speak(text) {
-      if (!window.speechSynthesis) return;
-      speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 0.95;
-      u.pitch = 1;
-      speechSynthesis.speak(u);
-    }
-
-    const brailleOrderForGrid = [1, 4, 2, 5, 3, 6];
-
-    function clearPending() {
-      timeouts.forEach(t => clearTimeout(t));
-      timeouts = [];
-      if (navigator.vibrate) navigator.vibrate(0);
-      Object.values(dotElements).forEach(el => el && el.classList.remove('pulse'));
-    }
-
     function renderBraille(letter) {
-      clearPending();
       brailleDisplay.innerHTML = "";
       dotElements = {};
       currentChar.textContent = "Character: " + letter;
@@ -153,7 +95,6 @@
       brailleOrderForGrid.forEach(dot => {
         const dotDiv = document.createElement("div");
         dotDiv.className = "dot";
-        dotDiv.dataset.dot = dot;
         if (brailleMap[letter] && brailleMap[letter].includes(dot)) {
           dotDiv.classList.add("on");
         }
@@ -161,7 +102,6 @@
           const span = document.createElement("span");
           span.textContent = dot;
           span.style.fontWeight = "700";
-          span.style.fontSize = "1rem";
           dotDiv.appendChild(span);
         }
         brailleDisplay.appendChild(dotDiv);
@@ -169,53 +109,50 @@
       });
     }
 
-    function animateSequence(letter) {
-      clearPending();
-      const seq = [1, 2, 3, 4, 5, 6];
-      const isTraining = trainingMode.checked;
-      const activeDur = isTraining ? 1000 : 500;
-      const gap = isTraining ? 500 : 250;
-      let t = 0;
+    // Vibrate with unique patterns for each dot
+    const vibrationPatterns = {
+      1: [200],
+      2: [200, 100, 200],
+      3: [400],
+      4: [200, 200, 400],
+      5: [600],
+      6: [100, 100, 100, 300]
+    };
 
-      if (brailleMap[letter]) {
-        speak(`${letter}`);
-      }
-
-      seq.forEach(dotNum => {
-        const showTimer = setTimeout(() => {
-          const el = dotElements[dotNum];
-          if (!el) return;
-          el.classList.add('pulse');
-          if (navigator.vibrate && brailleMap[letter] && brailleMap[letter].includes(dotNum)) {
-            navigator.vibrate(isTraining ? 220 : 120);
-          }
-        }, t);
-        timeouts.push(showTimer);
-
-        const hideTimer = setTimeout(() => {
-          const el = dotElements[dotNum];
-          if (el) el.classList.remove('pulse');
-        }, t + activeDur);
-        timeouts.push(hideTimer);
-
-        t += activeDur + gap;
+    function vibrateLetter(letter, delay = 0) {
+      if (!brailleMap[letter]) return Promise.resolve();
+      return new Promise(res => {
+        setTimeout(() => {
+          const dots = brailleMap[letter];
+          dots.forEach((dot, i) => {
+            setTimeout(() => {
+              if (navigator.vibrate) navigator.vibrate(vibrationPatterns[dot] || [150]);
+            }, i * 300);
+          });
+          res();
+        }, delay);
       });
+    }
 
-      const afterAll = setTimeout(() => {
-        if (trainingMode.checked && brailleMap[letter]) {
-          speak(`Dots ${brailleMap[letter].join(', ')}`);
-        }
-      }, t + 20);
-      timeouts.push(afterAll);
+    // Continuous play of whole message
+    async function playMessage() {
+      if (!sequence.length) return;
+      for (let i = 0; i < sequence.length; i++) {
+        const letter = sequence[i];
+        renderBraille(letter);
+        await vibrateLetter(letter);
+        await new Promise(r => setTimeout(r, trainingMode.checked ? 1200 : 700)); // gap between letters
+      }
+      currentChar.textContent = "Message finished ✅";
     }
 
     // Load text
     loadBtn.addEventListener("click", () => {
       const text = inputText.value
         .toUpperCase()
-        .replace(/[^A-Z0-9.,;:!?'"#(){}\[\]&*\/\\+=<>@«»№ -]/g, "");
+        .replace(/[^A-Z0-9., ]/g, "");
       if (!text) {
-        alert("Please enter supported characters (letters, digits, punctuation).");
+        alert("Please enter supported characters.");
         return;
       }
       sequence = text.split("");
@@ -223,20 +160,16 @@
       renderBraille(sequence[index]);
     });
 
-    // Swipe simulation
+    // Swipe simulation (manual mode)
     phone.addEventListener("click", () => {
       if (!sequence.length) return;
       const letter = sequence[index];
       renderBraille(letter);
-      animateSequence(letter);
+      vibrateLetter(letter);
       index = (index + 1) % sequence.length;
     });
 
-    trainingMode.addEventListener("change", () => {
-      if (sequence.length) {
-        renderBraille(sequence[(index === 0 ? sequence.length - 1 : index - 1) % sequence.length]);
-      }
-    });
+    playBtn.addEventListener("click", playMessage);
   </script>
 </body>
 </html>
